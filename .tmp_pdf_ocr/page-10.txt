@@ -1,0 +1,28 @@
+ANSI/SIA DC-09-2013: Internet Protocol Event Reporting
+
+Honeywell - Bill Blum
+Honeywell . Bob Orlando
+Honeywell . Gordon Hope
+Honeywell Rich Hinkson
+Honeywell . Scott Simon
+Integrated Command Software .R. Hunter Knight
+
+-Al DePierro
+
+. Per Hanssen
+
+. Robert Dolph
+
+. Morgan Hertel
+
+.Jay Hauh
+
+SIA gratefully acknowledges the efforts of the many volunteers from the security industry that helped the Subcommittee to
+develop this standard.
+
+Napco
+Salient Systems Corporation...
+Security Sales Integration Magazine .
+The Command Center.
+
+Page x

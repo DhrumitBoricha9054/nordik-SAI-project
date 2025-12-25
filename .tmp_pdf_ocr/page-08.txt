@@ -1,0 +1,103 @@
+ANSI/SIA DC-09-2013: Internet Protocol Event Reporting
+
+| Acknowledgements - 2013
+Working Group Technical Editor:
+
+North Latitude Technology, Ted Nesse
+
+Working Group Participants:
+
+- Tony Mucci
+
+. Stephane Jacquet
+. Shane Clary
+
+- Denis Caler
+
+. Michael Reimer
+-Kevin Ritchie
+
+. Stephan Kovaciss
+-Dan Nita
+
+-Rich Hinkson
+-John Slogick
+
+. Larry Dischert
+
+- Bryon Monte
+
+- Kevin Flanders
+
+| Amstein & Walthert, DCC Consulting
+Bay Alarm...
+Bosch Security
+Bosch Security
+Bosch Security
+Bosch Security
+
+Honeywell
+Honeywell
+LRD Consulting ..
+UL...
+UT
+
+Acknowledgements - 2007
+
+This standard was approved as an American National Standard by the Security Industry Standards Council (SISC). The
+voting members are listed below.
+
+Acquient Security Consulting -Jack Sigler
+Acquient Security Consulting . Terry France
+ACTA -Dr. Jimmy Salinas
+ACTA -Tim Jeffries
+ADT.. - Larry Dischert
+American Protective Services .Dan Jacquish
+
+. Susan Melnicove
+. Shane Clary
+
+. Stephen Kovaciss
+-Rick Sheets
+
+Bosch Security Systems
+Brinks
+
+Corbin Russwin. - Tom Harris
+Corbin Russwin . . Richard McKeown
+CSAA. - Lou Fiore
+
+CSAA,
+
+- Ralph Sevinor
+Emergency24 - Pat Devereaux
+Emergency24 - Kevin McCarthy
+Fargo Electronics . Gary Klinefelter
+- Frank Clark
+
+. Chuck Christiansen
+- Brian Moses
+-Bill DeVoe
+-Mark Peterson
+
+- Rob Zivney
+
+- Gordon Hope
+
+. Isaac Papier
+Jeffrey Zwirn
+
+.R. Hunter Knight
+. Sherrie Knight
+
+Honeywell
+IDS Research and Development, Inc.
+Integrated Command Software
+Integrated Command Sofware .
+
+Mastec - George Bish
+NBFAA. -Dale Eller
+NBFAA. Rick Simpson
+Pelco -Dave Smith
+
+Page viii

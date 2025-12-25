@@ -1,0 +1,108 @@
+ANSI/SIA DC-09-2013: Internet Protocol Event Reporting
+
+. Per Hanssen
+. George Wagner
+
+Salient Systems Corp.....
+Sandia National Laboratories
+
+SecuraKey - Bill Newill
+Securitron - Scott Baker
+Securitron Larry Kern
+SEIWG. . Chris Hernandez
+
+Security Access Design, LLC
+Sequel Technologies
+Siemens Building Technologies
+Siemens Building Technologies
+
+. Richard Kelley
+. Ted Nesse
+-Noelle Britton
+
+- Bill Gorski
+
+. Hunter Knight
+-Mark Visbal
+-Joe Miskulin
+-Lou Chavez
+
+. Derek Mathews
+-Ron Martin
+.Jim Dray.
+
+.Pam Petrow
+-John Murphy
+
+. Matthew Kenjura
+- Dale Berti
+Reid Wilson
+
+UL.
+U.S. Department of Commerce / NIST .
+U.S. Department of Commerce / NIST .
+Vector Securit
+
+Walker Engineering ..
+Walker Engineering ..
+Yale Commercial Locks and Hardware.
+
+This standard was developed in SIA Standards; specifically within the IP Working Group of the SIA Security
+Communications Subcommittee. The following are additional acknowledgements to be made:
+
+Chairman of the SIA Standards Committee:
+
+Integrated Command Software R. Hunter Knight
+
+Chairman of the SIA Standards Security Communications Subcommittee:
+
+Deister Electronics USA, Inc.......... William Nuffer
+
+Chairman of the IP Working Grou
+Bosch Security Systems
+
+Stephen Kovaciss
+
+Working Group Technical Editor:
+
+Sequel Technologies, LLC.... Theodore Nesse
+
+Participants:
+
+-Bernie Worst
+
+- Warren Burgess
+.Jimmy Salinas
+
+. Stephen Kovacsiss
+Rich Ader
+
+. Drew Chernoy
+-Dan Nita
+
+. Sascha Kylau
+
+. Stephan Frenette
+-Kelly Carter
+
+. Holly Barkwell-Holland
+- Frank Clark
+
+-Jack Fewx
+
+.Gary Withrow
+
+-Bill DeVoe
+
+-Mike Davis
+
+Rich Hinkson
+
+. Steve Yawney
+
+Elk Products
+Fire Monitoring of Canada Inc.
+
+Honeywell
+
+Page ix

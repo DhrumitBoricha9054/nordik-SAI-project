@@ -1,0 +1,73 @@
+ANSI/SIA DC-09-2013: Internet Protocol Event Reporting
+
+Contents
+1. SCOPE...
+
+2. REFERENCES...
+
+2.1. NORMATIVE REFERENCE...
+2.2. INFORMATIONAL REFERENCES
+
+w
+
+CONVENTIONS AND DEFINITIONS...
+
+3.1. TYPOGRAPHIC CONVENTIONS...
+3.2. UMLNoTATION..
+3.3. BINDING LANGUAGE
+3.4. GLOSSARY...
+
+4. COMPATIBILITY.
+
+4.1. UseR DATAGRAM PROTOCOL (UDP) AND TRANSMISSION CONTROL PROTOCOL (TCP)
+4 UDP Source Port Number
+4.2. MARKING...
+
+w
+
+REQUIREMENTS
+
+5.1. MEDIA...
+5.2. IP ADDRESSES
+5.3. COMMUNICATION SEQUENCE...
+5.4. ENCRYPTION.
+5.4.1. Encryption Standard.
+5.4.2. Identifying Encrypted Messages
+Encrypted Elements...
+Padding...
+Padded Region
+Pad Data...
+pad (Pad Data Field!
+Encryption Key.
+Central Station Receiver Requirements
+Premises Equipment Requirement:
+Key Contents...
+Cipher Block Chaining
+. Encoding.
+5.5. MESSAGES...
+Event Messages (PE) .
+LF.
+cre
+OLLL
+“id" (ID Token)
+seq...
+Account Identification (Rrevr, Lpref, #acct)
+[Data] or [<pad> | Data] (Message Data) .
+[x...data...] (Optional Extended Data).
+Timestamp
+CR.
+5.5.2. Supervision Message..
+5.5.2.1. Null Message (Link Test) ...
+5.5.3. Acknowledgement Messages (CSR)
+5.5.3.1. ACK - Positive Acknowledgement .
+5.5.3.2. NAK- Negative Acknowledgement
+5.5.3.3. DUH - Unable Acknowledgement .
+5.5.3.4. _ RSP - Message Response (future use}
+
+w
+
+GAARA BR AWW
+
+SwmMYNVYADADHAHAGVUVUUUHUHUY
+
+Page iii

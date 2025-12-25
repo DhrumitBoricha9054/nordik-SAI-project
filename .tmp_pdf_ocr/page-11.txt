@@ -1,0 +1,75 @@
+1.
+
+ANSI/SIA DC-09-2013: Internet Protocol Event Reporting
+
+SIA Digital Communication Standard DC-09-2013
+Internet Protocol Event Reporting
+
+Scope
+
+This standard details the protocol and related details to report events from premises equipment to a
+central station using Internet protocol (IP) to carry the event content. It is important to distinguish that,
+while this reporting method uses the SIA Receiver-to-Computer Interface Protocol as a foundation, it is
+intended for event transport from protected premises to a central station - possibly using the public
+Internet.
+
+This standard is intended for use by manufacturers of control panels and central station receivers to
+ensure equipment compatibility, as well as all affected parties. Compliance with this standard is
+voluntary.
+
+2.
+
+References
+
+2.1. Normative Reference
+The following document provides a normative reference for this standard:
+
+« DC-07: SIA Digital Communications Standards — Receiver-to-Computer Interface Protocol (Type
+2).
+
+2.2. Informational References
+Additional guidance on areas relating to this standard, as noted and otherwise, can be obtained from
+the sources below.
+
+National Fire Protection Association
+« NFPA 72, National Fire Alarm Code
+
+Underwriters Laboratories, Inc.
+
+UL 609, Local Burglar-Alarm Units and Systems
+
+UL 611, Central-Station Burglar-Alarm Systems
+
+UL 681, Installation and Classification of Mercantile and Bank Burglar-Alarm Systems
+UL 864, Control Units for Fire-Protective Signaling Systems
+
+UL 985, Household Fire Warning System Units
+
+UL 1023, Household Burglar-Alarm System Units
+
+UL 1076, Proprietary Burglar Alarm Units and Systems
+
+UL 1610, Central Station Burglar-Alarm Units
+
+UL 1635, Digital Burglar Alarm Communicator System Units
+
+UL 1641, Installation and Classification of Residential Burglar Alarm Systems
+
+Cr
+
+Security Industry Association
+¢ DC-02: Digital Communications -Generic Protocols Overview Technical Report
+
+¢ —DC-03: Digital Communication Standard - “SIA Format” Protocol for Alarm System
+Communications.
+
+e¢ DC-04: SIA 2000 Protocol for Alarm System Communications
+
+¢ DC-05: Digital Communication Standard - “Contact ID” Protocol for Alarm System
+Communications.
+
+National Institute of Standards and Technology
+¢ Federal Information Processing Standards Publication 197 (AES)
+e NIST Special Publication 800-38A: Recommendation for Block Cipher Modes of Operation
+
+Page 1

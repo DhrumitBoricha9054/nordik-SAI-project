@@ -1,0 +1,54 @@
+ANSI/SIA DC-09-2013: Internet Protocol Event Reporting
+
+Foreword
+
+This standards document is published by the Security Industry Association (SIA) and was developed and adopted by a
+consensus of industry volunteers in accordance with SIA’s standards development policies and procedures. It is intended
+to facilitate product compatibility and interchangeability, to reduce misunderstandings between manufacturers and
+purchasers, and to assist purchasers in obtaining the proper products to fulfill their particular needs.
+
+The existence of this or any SIA standards document shall not prevent any SIA member or non-member from
+manufacturing, selling, or using products not conforming to this or any SIA standard. SIA standards are voluntary. SIA
+encourages the use of this document but will not take any action to ensure compliance with this or any other SIA
+Standard. SIA assumes no responsibility for the use, application or misapplication of this document. Industry members
+using this document, particularly those having participated in its development and adoption, are considered by SIA to
+have waived any right they might otherwise have had to assert claims against SIA regarding the development process of
+this standard.
+
+Although some SIA standards establish minimum performance requirements, they are intended neither to preclude
+additional product features or functions nor to act as a maximum performance limit. Any product the specifications of
+which meet the minimum requirements of a SIA standard shall be considered in compliance with that standard. Any
+product the specifications of which exceed the minimum requirements of a SIA standard shall also be considered in
+compliance with the standard, provided that such product specifications do not exceed any maximum requirements set by
+the standard. SIA standards are not intended to supersede any recommended procedures set by a manufacturer for its
+products.
+
+SIA reserves the right to revise this document at any time. Because SIA policy requires that every standard be reviewed
+periodically and be revised, reaffirmed, or withdrawn, users of this document are cautioned to obtain and use the most
+recent edition of this standard. Current information regarding the revision level or status of this or any other SIA standard
+may be obtained by contacting SIA.
+
+Requests to modify this document are welcome at any time from any party, regardless of membership affiliation with SIA.
+Such requests, which must be in writing and sent to the address set forth below, must clearly identify the document and
+text subject to the proposed modification and should include a draft of proposed changes with supporting comments.
+Such requests will be considered in accordance with SIA’s standards development policies and procedures.
+
+Written requests for interpretations of a SIA standard will be considered in accordance with SIA’s standards development
+policies and procedures. While it is the practice of SIA staff to process an interpretation request quickly, immediate
+responses may not be possible since it is often necessary for the appropriate standards subcommittee to review the
+request and develop an appropriate interpretation.
+
+Requests to modify a standard, requests for interpretations of a standard, or any other comments are welcome and may
+be sent to:
+
+The Security Industry Association
+8405 Colesville Road, Ste. 500
+Silver Spring, MD 20910
+(703) 683-2075
+www.siaonline.org
+standards@siaonline.org
+
+This document is owned by the Security Industry Association and may not be reproduced, in whole or part, without the
+prior written permission from SIA.
+
+Page vi

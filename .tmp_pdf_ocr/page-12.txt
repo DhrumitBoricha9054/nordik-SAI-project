@@ -1,0 +1,61 @@
+3.
+
+ANSI/SIA DC-09-2013: Internet Protocol Event Reporting
+
+Conventions and Definitions
+3.1. Typographic Conventions
+
+Elements of messages are enclosed in <braces>, and may consist of one or more bytes. The
+notational braces do not appear in the transmitted messages.
+
+Complete messages are enclosed in a framel,
+
+Italic font is used for variable elements in a message.
+
+3.2. UML Notation
+UML sequence diagrams are used to document requirements of the standard that involve a sequence
+of messages.
+
+3.3. Binding Language
+This standard uses the term “shall” to convey binding requirements.
+
+The term “may” is used to convey features that are allowed but not required.
+
+Terms such as “is”, “are”, “will”, and others are used to convey statements of fact for advisory
+purposes only. The annotation “NOTE:” also precedes advisory information.
+
+Where this standard is silent on a feature, the feature is permitted so long as it is not in conflict with
+the requirements contained herein.
+
+3.4. Glossary
+
+ACK — Acknowledgment
+A return message indicating correct receipt of a transmitted message.
+
+Authentication
+A process to assure that a received message is not a counterfeit sent by an unauthorized sender.
+
+Central Station Receiver — “CSR”
+A central station receiver accepts connections from premises equipment, for the purpose of
+transmitting event information to the central station.
+
+Encryption
+The process of obscuring the content of a transmitted data message so it can not be read or
+
+replicated by unauthorized persons or equipment.
+
+Encryption Key
+A data word used to encrypt and decrypt a message.
+
+Frame
+The elements that make up a complete message for this protocol.
+
+IP Address
+The unique identifier number assigned to a device on an IP network.
+
+NAK — Negative Acknowledgement
+A return message indicating rejection of a transmitted message.
+
+Premises Equipment — “PE”
+
+Page 2

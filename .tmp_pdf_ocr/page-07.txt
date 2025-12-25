@@ -1,0 +1,54 @@
+ANSI/SIA DC-09-2013: Internet Protocol Event Reporting
+
+Revisions - 2013 Version
+
+Paragraph Revision
+contents expanded to 4 levels
+Foreword updated SIA address
+
+Acknowledgements
+
+added 2013 section
+
+3.4
+
+redefined encryption
+
+411 added section regarding source port number
+
+4.2 added requirement to mark equipment with list of supported tokens
+5.3 close socket is optional
+
+5.4.7 revised for clarity
+
+5.5.1.1 added "0x0A", sent as binary value
+
+5.5.1.2 four ASCII characters
+
+5.5.1.4 ASCII, must support SIA-DCS or ADM-CID
+
+5.5.1.5 revised for clarity, four ASCII characters
+
+§.5.1.7 revised for clarity
+
+5.5.1.8 added several data identifiers, including "A" for authentication hash
+5.5.1.9 ASCII
+
+§.5.1.10 added "0x0D"
+
+5.5.3.1 revised for clarity
+
+5.6.2.2 shall discard
+
+5.6.2.4 added paragraph, no response to decryption errors
+
+Annex B revised examples
+
+Annex B corrected title of example B6
+
+Annex E, F, G, H, |
+
+added annex
+
+Page vii
+

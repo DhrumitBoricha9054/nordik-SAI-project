@@ -1,0 +1,64 @@
+ANSI/SIA DC-09-2013: Internet Protocol Event Reporting
+
+<LF><crc><0LLL>
+<"id'><seq><Rrevr><Lpref><#acct>[<pad>|...data...][x...data...]<timestamp>
+<CR>
+
+5.4.4. Padding
+Only when encryption is used, messages shall be padded with pseudo-random data (pad) so that
+the byte count of the encrypted region is an even multiple of 16.
+
+5.4.4.1. Padded Region
+
+The characters counted for padding and encryption begin after the opening bracket "[" on the
+data element, and include the pad field (pad), data, and timestamp field. The final <CR> is
+not included in the count for padding and is not encrypted.
+
+5.4.4.2. Pad Data
+
+Pad data shall be pseudo-random bytes which vary from one message to the next. This data
+will consist of binary values 0-255, except that it shall not contain the ASCII values for the
+character "|" (124, x7C), "[" (91, x5B) or "]" (93, x5D).
+
+5.4.4.3. pad (Pad Data Field)
+
+When a message is encrypted, padding is inserted between the open bracket character "["
+and the pad termination character "|". The number of characters in the pad field shall be such
+that the total number of encrypted characters (from the first pad character up to and including
+the last timestamp character is an even multiple of 16.
+
+When a message is already an even multiple of 16 bytes, 16 pad bytes shall be added to the
+message.
+
+The "|" character immediately following the pad field shall appear in all encrypted messages.
+This pad termination "|" character shall not appear in unencrypted messages, though the "|"
+character that typically separates the account number from the rest of the data may appear.
+
+5.4.5. Encryption Key
+When encryption is selected, the PE may use a key length of 128, 192 or 256 bits. A matching
+key value (and therefore matching key length) must be programmed at the PE and the CSR.
+
+5.4.5.1. Central Station Receiver Requirements
+
+ACSR shall support all three key lengths, as well as messages using no encryption. Other
+key lengths may be incorporated into the standard in the future, but are currently non-
+compliant.
+
+Each port in the CSR that receives events shall be configurable with at least one encryption
+key, to be used for all PE reporting to that IP address/port. Optionally, each port may be
+configurable with multiple encryption keys, to be used with individual accounts or groups of
+accounts.
+
+5.4.5.2. Premises Equipment Requirements
+When the PE supports encryption, it shall be able to store a private key of 128, 192 or 256
+bits in length, at the option of the manufacturer
+
+5.4.5.3. Key Contents
+
+When private or session keys are created, a pseudo-random process shall be used. Each bit
+shall have an equal probability of being 0 or 1 as the key is created. The use of a binary-
+encoded ASCIl phrase as the key is specifically discouraged.
+
+5.4.6. Cipher Block Chaining
+
+Page 5

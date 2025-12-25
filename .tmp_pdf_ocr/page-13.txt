@@ -1,0 +1,56 @@
+ANSI/SIA DC-09-2013: Internet Protocol Event Reporting
+
+"Premises equipment" is used to describe a general class of electronic systems that are field-installed
+for the purpose of reporting event data to a central station. Security systems, fire alarm control
+panels and access control systems are examples of premises equipment.
+
+Compatibility
+
+4.1. _ User Datagram Protocol (UDP) and Transmission Control Protocol (TCP)
+Premises Equipment (PE) and Central Station Receivers (CSRs) shall support either UDP or TCP for
+event message transmission, and may support both UDP and TCP. When CSRs support both
+protocols, the CSR shall automatically use the appropriate protocol for incoming messages without
+requiring a configuration setting. When PE support both protocols, the protocol use may be manually
+specified, or the manufacturer may implement a method to attempt message delivery with one
+protocol, and switch to the other as necessary.
+
+When PE or CSRs support only one protocol, UDP is the preferred implementation but TCP may be
+used.
+
+4.1.1. UDP Source Port Number
+
+When UDP is used, the transmitter may set the source port number in the UDP header to the
+desired port at which replies from the central station receiver will be accepted. This transmitter
+behavior is recommended.
+
+4.2. Marking
+
+Equipment capable of using UDP/IP for communication shall be marked as compatible with "SIA IP
+Reporting (UDP-2013)". Equipment capable of using TCP/IP for communication shall be marked as
+compatible with "SIA IP Reporting (TCP-2013)". Equipment capable of using UDP/IP or TCP/IP for
+communication shall be marked as compatible with "SIA IP. Reporting (UDP/TCP-2013)".
+
+Additionally, equipment shall be marked to show the list of DC-07 tokens (protocols) that are
+supported.
+
+When PE and CSRs implementing this standard share at least one protocol (UDP or TCP), they are
+intended to be interoperable.
+
+Requirements
+
+5.1. Media
+
+This standard can be implemented on any media that carries Internet protocol (IP), including but not
+limited to Ethernet, 802.11x, CDMA 1x or GPRS. The ability of the network to perform media
+conversion and provide limited protection for message integrity is assumed.
+
+5.2. IP Addresses
+
+The central station receiver (CSR) shall be hosted on a static IP address. The premises equipment
+(PE) may be hosted on a dynamic or static IP address and shall be capable of being programmed
+with the IP address to which events are to be sent.
+
+The PE may have an option to use DNS to obtain the address of the CSR, however the installation is
+not compliant with this standard when the DNS option is enabled.
+
+Page 3

@@ -1,0 +1,49 @@
+ANSI/SIA DC-09-2013: Internet Protocol Event Reporting
+
+5.3. Communication Sequence
+
+When UDP is used, a simple transmit/acknowledge sequence is used to transmit messages:
+
+Premises Equipment CS Receiver
+
+1
+transmit event or supervision message()
+
+‘acknowedgement message()
+
+When TCP is used, the process is very similar:
+
+Premises Equipment CS Receiver
+
+T T
+establish socket)
+
+transmit event or supervision message()
+
+‘acknowedgem ent message()
+
+dose socket() (optional)
+
+5.4. Encryption
+PE may indicate use of AES encryption to transmit events. Encryption support is optional for PE.
+Encryption support is mandatory for CSRs.
+
+5.4.1. Encryption Standard
+For the AES requirements, refer to Federal Information Processing Standards Publication 197
+that is available from the National Institute of Standards and Technology.
+
+Additionally, encrypted messages shall use Cipher Block Chaining, as described in section 6.2 of
+NIST Special Publication 800-38A (2001 Edition).
+
+5.4.2. Identifying Encrypted Messages
+Encrypted messages shall be identified with an asterisk as described in section 0 of this standard.
+
+5.4.3. Encrypted Elements
+
+When encryption is used, only the data, timestamp and padding content of a message are
+encrypted. Encryption begins on the byte after the opening bracket "[" on the data element, and
+ends just before the terminating <CR>.
+
+The encrypted elements are shaded in the frame, below:
+
+Page 4

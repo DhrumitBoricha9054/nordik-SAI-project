@@ -1,0 +1,212 @@
+{
+	"info": {
+		"name": "SIA DC-09 API",
+		"description": "API endpoints for testing SIA DC-09 message generation and sending",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/health",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"health"
+					]
+				}
+			}
+		},
+		{
+			"name": "Generate Plain Message (No Send)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"message\": {\n    \"protocolId\": \"SIA-DCS\",\n    \"accountPrefix\": \"L0\",\n    \"account\": \"1234\",\n    \"data\": \"Nri1/BA01\"\n  },\n  \"send\": false\n}"
+				},
+				"url": {
+					"raw": "http://localhost:3000/api/sia/plain",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"sia",
+						"plain"
+					]
+				}
+			}
+		},
+		{
+			"name": "Send Plain Message",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"receiver\": {\n    \"host\": \"192.168.1.100\",\n    \"port\": 1000,\n    \"timeout\": 5000\n  },\n  \"message\": {\n    \"protocolId\": \"SIA-DCS\",\n    \"accountPrefix\": \"L0\",\n    \"account\": \"1234\",\n    \"data\": \"Nri1/BA01\"\n  },\n  \"send\": true\n}"
+				},
+				"url": {
+					"raw": "http://localhost:3000/api/sia/plain",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"sia",
+						"plain"
+					]
+				}
+			}
+		},
+		{
+			"name": "Generate Encrypted Message (No Send)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"message\": {\n    \"protocolId\": \"SIA-DCS\",\n    \"accountPrefix\": \"L0\",\n    \"account\": \"1234\",\n    \"alarmCommand\": \"Nri/BA01\",\n    \"latitude\": 59.9139,\n    \"longitude\": 10.7522\n  },\n  \"encryption\": {\n    \"key\": \"594162417237323352466D3964673233\"\n  },\n  \"send\": false\n}"
+				},
+				"url": {
+					"raw": "http://localhost:3000/api/sia/encrypted",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"sia",
+						"encrypted"
+					]
+				}
+			}
+		},
+		{
+			"name": "Send Encrypted Message",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"receiver\": {\n    \"host\": \"192.168.1.100\",\n    \"port\": 1000,\n    \"timeout\": 5000\n  },\n  \"message\": {\n    \"protocolId\": \"SIA-DCS\",\n    \"accountPrefix\": \"L0\",\n    \"account\": \"1234\",\n    \"alarmCommand\": \"Nri/BA01\",\n    \"latitude\": 59.9139,\n    \"longitude\": 10.7522\n  },\n  \"encryption\": {\n    \"key\": \"594162417237323352466D3964673233\"\n  },\n  \"send\": true\n}"
+				},
+				"url": {
+					"raw": "http://localhost:3000/api/sia/encrypted",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"sia",
+						"encrypted"
+					]
+				}
+			}
+		},
+		{
+			"name": "Analyze Message",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/api/sia/message/analyze?type=plain&account=1234&data=Nri1/BA01&sequence=1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"sia",
+						"message",
+						"analyze"
+					],
+					"query": [
+						{
+							"key": "type",
+							"value": "plain"
+						},
+						{
+							"key": "account",
+							"value": "1234"
+						},
+						{
+							"key": "data",
+							"value": "Nri1/BA01"
+						},
+						{
+							"key": "sequence",
+							"value": "1"
+						}
+					]
+				}
+			}
+		},
+		{
+			"name": "Generate Demo Messages",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"type\": \"both\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:3000/api/sia/demo",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"sia",
+						"demo"
+					]
+				}
+			}
+		}
+	]
+}
+
