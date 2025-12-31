@@ -13,11 +13,11 @@ function calculateCRC(data) {
   if (typeof data === 'string') {
     data = Buffer.from(data, 'ascii');
   }
-  
+
   // CRC-16 ARC implementation (polynomial 0x8005)
   let crc = 0x0000;
   const polynomial = 0x8005;
-  
+
   for (let i = 0; i < data.length; i++) {
     crc ^= data[i] << 8;
     for (let j = 0; j < 8; j++) {
@@ -29,7 +29,7 @@ function calculateCRC(data) {
       crc &= 0xFFFF;
     }
   }
-  
+
   // Format as 4-character hex string (uppercase, zero-padded)
   return crc.toString(16).toUpperCase().padStart(4, '0');
 }
@@ -68,17 +68,17 @@ function buildPlainMessage(id, seq, accountPrefix, account, data, receiver = '')
   // Build message body (without CRC and length)
   const accountStr = typeof account === 'number' ? account.toString() : account;
   const messageBody = `"${id}"${formatSequence(seq)}${receiver}${accountPrefix}#${accountStr}[${accountStr}|${data}]`;
-  
+
   // Calculate length (message body only, for 0LLL field)
   const length = messageBody.length;
   const lengthField = formatLength(length);
-  
+
   // Calculate CRC on message body
   const crcValue = calculateCRC(messageBody);
-  
+
   // Build complete message: LF + CRC + 0LLL + message body + CR
   const fullMessage = `\n${crcValue}${lengthField}${messageBody}\r`;
-  
+
   return Buffer.from(fullMessage, 'ascii');
 }
 
@@ -91,7 +91,7 @@ function buildPlainMessage(id, seq, accountPrefix, account, data, receiver = '')
 function generatePadding(length) {
   const padding = Buffer.alloc(length);
   const excluded = [91, 93, 124]; // [, ], |
-  
+
   for (let i = 0; i < length; i++) {
     let byte;
     do {
@@ -99,13 +99,13 @@ function generatePadding(length) {
     } while (excluded.includes(byte));
     padding[i] = byte;
   }
-  
+
   return padding;
 }
 
 /**
- * Add padding to data for encryption
- * Padding goes before the data, total length must be multiple of 16
+ * Add padding to data for encryption (matches Python exactly)
+ * Padding goes BEFORE the data, uses ASCII A-Z pattern like Python
  * @param {Buffer|string} data - Data to pad
  * @returns {Buffer} Padded data
  */
@@ -113,11 +113,18 @@ function addPadding(data) {
   if (typeof data === 'string') {
     data = Buffer.from(data, 'ascii');
   }
-  
+
   const dataLength = data.length;
-  const padLength = dataLength % 16 === 0 ? 16 : 16 - (dataLength % 16);
-  
-  const padding = generatePadding(padLength);
+  // Python: pad_length = 16 - len(input_bytes) % 16; pad_length = pad_length if pad_length != 16 else 0
+  let padLength = 16 - (dataLength % 16);
+  if (padLength === 16) padLength = 0;
+
+  // Python uses ASCII A-Z pattern: bytes([i % 26 + 65 for i in range(pad_length)])
+  const padding = Buffer.alloc(padLength);
+  for (let i = 0; i < padLength; i++) {
+    padding[i] = (i % 26) + 65; // A=65, B=66, etc.
+  }
+
   return Buffer.concat([padding, data]);
 }
 
@@ -129,7 +136,7 @@ function addPadding(data) {
  */
 function encryptAES(data, key) {
   const crypto = require('crypto');
-  
+
   // Convert key to Buffer if it's a hex string
   let keyBuffer;
   if (typeof key === 'string') {
@@ -137,7 +144,7 @@ function encryptAES(data, key) {
   } else {
     keyBuffer = key;
   }
-  
+
   // Convert data to Buffer if it's a string
   let dataBuffer;
   if (typeof data === 'string') {
@@ -145,14 +152,14 @@ function encryptAES(data, key) {
   } else {
     dataBuffer = data;
   }
-  
+
   // IV is all zeros per DC-09 standard
   const iv = Buffer.alloc(16, 0);
-  
+
   const cipher = crypto.createCipheriv('aes-128-cbc', keyBuffer.slice(0, 16), iv);
   let encrypted = cipher.update(dataBuffer);
   encrypted = Buffer.concat([encrypted, cipher.final()]);
-  
+
   // Return as ASCII hex string
   return encrypted.toString('hex').toUpperCase();
 }
@@ -171,30 +178,30 @@ function encryptAES(data, key) {
  */
 function buildEncryptedMessage(id, seq, accountPrefix, account, data, key, receiver = '') {
   const crypto = require('crypto');
-  
+
   // Build data part that will be encrypted: |account|data|timestamp
   const accountStr = typeof account === 'number' ? account.toString() : account;
   const dataToEncrypt = `|${accountStr}|${data}`;
-  
+
   // Add padding
   const paddedData = addPadding(Buffer.from(dataToEncrypt, 'ascii'));
-  
+
   // Encrypt
   const encryptedHex = encryptAES(paddedData, key);
-  
+
   // Build message body: "*id" + seq + receiver + prefix + account + [encrypted]
   const messageBody = `"*${id}"${formatSequence(seq)}${receiver}${accountPrefix}#${accountStr}[${encryptedHex}]`;
-  
+
   // Calculate length
   const length = messageBody.length;
   const lengthField = formatLength(length);
-  
+
   // Calculate CRC on message body
   const crcValue = calculateCRC(messageBody);
-  
+
   // Build complete message: LF + CRC + 0LLL + message body + CR
   const fullMessage = `\n${crcValue}${lengthField}${messageBody}\r`;
-  
+
   return Buffer.from(fullMessage, 'ascii');
 }
 
@@ -209,12 +216,12 @@ function convertCoordinates(latitude, longitude) {
   const lonDegrees = Math.floor(longitude);
   const lonMinutes = (longitude - lonDegrees) * 60;
   const lonFormat = `[X${lonDegrees.toString().padStart(3, '0')}E${lonMinutes.toFixed(8)}]`;
-  
+
   // Latitude
   const latDegrees = Math.floor(latitude);
   const latMinutes = (latitude - latDegrees) * 60;
   const latFormat = `[Y${latDegrees.toString().padStart(2, '0')}N${latMinutes.toFixed(8)}]`;
-  
+
   return lonFormat + latFormat;
 }
 

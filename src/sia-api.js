@@ -2,27 +2,57 @@
  * SIA DC-09 HTTP API
  * REST API wrapper for SIA DC-09 message sending
  * Allows testing via Postman or other HTTP clients
+ * 
+ * Alarm24 Test Settings:
+ * - IP: 213.167.121.142
+ * - Port: 12004
+ * - Account ID: 555555
+ * - Feedback: Call 761 14 100 to verify received data
  */
 
 const fastify = require('fastify')({
   logger: true
 });
 
+// Add content type parser to handle empty body
+fastify.addContentTypeParser('application/json', { parseAs: 'string' }, function (req, body, done) {
+  try {
+    const json = body ? JSON.parse(body) : {};
+    done(null, json);
+  } catch (err) {
+    done(null, {});
+  }
+});
+
 const {
   buildPlainMessage,
-  buildEncryptedMessage,
   convertCoordinates,
   calculateCRC,
-  formatLength
+  formatLength,
+  formatSequence,
+  addPadding,
+  encryptAES
 } = require('./sia-utils');
 
-// Sequence number tracker (in-memory, should be persisted in production)
+// ============================================
+// ALARM24 DEFAULT SETTINGS
+// ============================================
+const ALARM24_CONFIG = {
+  host: '213.167.121.142',
+  port: 12004,
+  account: '555555',
+  timeout: 10000
+};
+
+const DEFAULT_ENCRYPTION_KEY = '594162417237323352466D3964673233';
+
+// Sequence number tracker
 let sequenceNumber = 1;
 
 /**
  * Send TCP message helper
  */
-function sendTCPMessage(message, host, port, timeout = 5000) {
+function sendTCPMessage(message, host, port, timeout = 10000) {
   return new Promise((resolve, reject) => {
     const net = require('net');
     const client = new net.Socket();
@@ -54,30 +84,375 @@ function sendTCPMessage(message, host, port, timeout = 5000) {
   });
 }
 
+/**
+ * Build encrypted alarm message - EXACTLY like Python SIA-ENCRYPTED.py
+ * @param {string} clientId - Client ID (user_id in Python)
+ * @param {string} signalType - Signal type (e.g., "BA", "PA", "MA")
+ * @param {string} zone - Zone number (e.g., "01", "001")
+ * @param {number} latitude - Latitude
+ * @param {number} longitude - Longitude
+ * @param {string} encryptionKey - Hex encryption key
+ */
+function buildEncryptedAlarmPython(clientId, signalType, zone, latitude, longitude, encryptionKey) {
+  const now = new Date();
+  const datePart = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${now.getFullYear()}`;
+  const timePart = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+
+  // Python: alarm_command = SignalType + Zone = "Nri/" + signalType + zone
+  const alarmCommand = `Nri/${signalType}${zone}`;
+
+  // Python: output_coordinates = self.convert_coordinates(latitude, longitude)
+  const outputCoordinates = convertCoordinates(latitude, longitude);
+
+  // Python line 20: input_string = f'"*SIA-DCS"0005L0#{user_id}[{user_id}|{alarm_command}]{output_coordinates}_{time_part},{date_part}'
+  const inputString = `"*SIA-DCS"${formatSequence(sequenceNumber)}L0#${clientId}[${clientId}|${alarmCommand}]${outputCoordinates}_${timePart},${datePart}`;
+
+  // Python line 24-27: part_before, part_after = input_string.split('[', 1)
+  const bracketIndex = inputString.indexOf('[');
+  const partBefore = inputString.substring(0, bracketIndex + 1);
+  const partAfter = '|' + inputString.substring(bracketIndex + 1);
+
+  // Python line 29: encryption_part = self.add_padding(part_after)
+  const paddedData = addPadding(Buffer.from(partAfter, 'ascii'));
+
+  // Python line 32: encrypted_hex = self.encrypt(encryption_part, key)
+  const encryptedHex = encryptAES(paddedData, encryptionKey);
+
+  // Python line 36: before_and_after = f"{part_before}{encrypted_hex}"
+  const beforeAndAfter = `${partBefore}${encryptedHex}`;
+
+  // Python line 38: crc_hash = self.calculate_crc(before_and_after.encode())
+  // Python line 125: return f"{crc_value_hex.upper()}{len(input_bytes):04X}"
+  const crcArc = calculateCRC(beforeAndAfter);
+  const lengthHex = beforeAndAfter.length.toString(16).toUpperCase().padStart(4, '0');
+  const crcHash = `${crcArc}${lengthHex}`;
+
+  // Python line 39: with_hash = f"{crc_hash}{before_and_after}"
+  const withHash = `${crcHash}${beforeAndAfter}`;
+
+  // Python line 41: with_line_feed_and_return = f"\r\n{with_hash}\r"
+  const fullMessage = `\r\n${withHash}\r`;
+
+  sequenceNumber = (sequenceNumber + 1) % 65536;
+
+  return {
+    message: Buffer.from(fullMessage, 'ascii'),
+    crc: crcArc,
+    sequence: sequenceNumber - 1,
+    inputString,
+    partBefore,
+    partAfter
+  };
+}
+
+/**
+ * Build encrypted medical alarm message (matches Python SIA-ENCRYPTED.py exactly)
+ */
+function buildEncryptedMedicalAlarm(account, alertType, alertLevel, alertValue, encryptionKey) {
+  const signalType = 'MA'; // Medical Alarm
+  const zone = '001';
+
+  const now = new Date();
+  const datePart = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${now.getFullYear()}`;
+  const timePart = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+
+  const alarmCommand = `Nri/${signalType}${zone}^${alertType}^${alertLevel}^${alertValue || ''}`;
+
+  // Build input_string exactly like Python line 20:
+  const inputString = `"*SIA-DCS"${formatSequence(sequenceNumber)}L0#${account}[${account}|${alarmCommand}]_${timePart},${datePart}`;
+
+  const bracketIndex = inputString.indexOf('[');
+  const partBefore = inputString.substring(0, bracketIndex + 1);
+  const partAfter = '|' + inputString.substring(bracketIndex + 1);
+
+  const paddedData = addPadding(Buffer.from(partAfter, 'ascii'));
+  const encryptedHex = encryptAES(paddedData, encryptionKey);
+
+  const beforeAndAfter = `${partBefore}${encryptedHex}`;
+
+  const crcArc = calculateCRC(beforeAndAfter);
+  const lengthHex = beforeAndAfter.length.toString(16).toUpperCase().padStart(4, '0');
+  const crcHash = `${crcArc}${lengthHex}`;
+
+  const withHash = `${crcHash}${beforeAndAfter}`;
+  const fullMessage = `\r\n${withHash}\r`;
+
+  sequenceNumber = (sequenceNumber + 1) % 65536;
+
+  return {
+    message: Buffer.from(fullMessage, 'ascii'),
+    crc: crcArc,
+    sequence: sequenceNumber - 1
+  };
+}
+
+/**
+ * Build plain medical alarm message
+ */
+function buildPlainMedicalAlarm(account, alertType, alertLevel, alertValue) {
+  const signalType = 'MA';
+  const zone = '001';
+  const alarmData = `Nri/${signalType}${zone}^${alertType}^${alertLevel}^${alertValue || ''}`;
+
+  const message = buildPlainMessage('SIA-DCS', sequenceNumber, 'L0', account, alarmData);
+  const messageStr = message.toString('ascii');
+  const crc = messageStr.substring(1, 5);
+
+  sequenceNumber = (sequenceNumber + 1) % 65536;
+
+  return {
+    message,
+    crc,
+    sequence: sequenceNumber - 1
+  };
+}
+
+// ============================================
+// API ENDPOINTS
+// ============================================
+
 // Health check
 fastify.get('/health', async (request, reply) => {
   return {
     status: 'ok',
     service: 'SIA DC-09 API',
-    version: '1.0.0'
+    version: '1.0.0',
+    alarm24: {
+      host: ALARM24_CONFIG.host,
+      port: ALARM24_CONFIG.port,
+      clientId: ALARM24_CONFIG.account,
+      feedback: 'Call 761 14 100 to verify received data'
+    }
   };
 });
 
 /**
- * POST /api/sia/plain
- * Send non-encrypted SIA message
+ * POST /api/sia/alarm24/send-encrypted
+ * Send encrypted alarm to Alarm24 - SAME FIELDS AS PYTHON
  * 
  * Body:
  * {
- *   "receiver": { "host": "192.168.1.100", "port": 1000 },
- *   "message": {
- *     "protocolId": "SIA-DCS",
- *     "accountPrefix": "L0",
- *     "account": "1234",
- *     "data": "Nri1/BA01"
- *   },
- *   "send": true  // if false, just returns the message without sending
+ *   "clientId": "555555",
+ *   "signalType": "BA",
+ *   "zone": "01",
+ *   "latitude": 59.9139,
+ *   "longitude": 10.7522
  * }
+ */
+fastify.post('/api/sia/alarm24/send-encrypted', async (request, reply) => {
+  try {
+    const {
+      clientId = ALARM24_CONFIG.account,
+      signalType = 'BA',
+      zone = '01',
+      latitude = 59.9139,
+      longitude = 10.7522
+    } = request.body || {};
+
+    // Build message exactly like Python
+    const result = buildEncryptedAlarmPython(
+      clientId,
+      signalType,
+      zone,
+      parseFloat(latitude),
+      parseFloat(longitude),
+      DEFAULT_ENCRYPTION_KEY
+    );
+
+    const response = {
+      success: true,
+      input: {
+        clientId,
+        signalType,
+        zone,
+        latitude,
+        longitude,
+        alarmCommand: `Nri/${signalType}${zone}`
+      },
+      message: {
+        ascii: result.message.toString('ascii').replace(/\n/g, '\\n').replace(/\r/g, '\\r'),
+        hex: result.message.toString('hex').toUpperCase(),
+        crc: result.crc,
+        length: result.message.length
+      },
+      debug: {
+        inputString: result.inputString,
+        partBefore: result.partBefore,
+        partAfter: result.partAfter
+      },
+      receiver: {
+        host: ALARM24_CONFIG.host,
+        port: ALARM24_CONFIG.port
+      },
+      feedback: 'Call 761 14 100 to verify received data'
+    };
+
+    // Send to Alarm24
+    try {
+      const tcpResponse = await sendTCPMessage(
+        result.message,
+        ALARM24_CONFIG.host,
+        ALARM24_CONFIG.port,
+        ALARM24_CONFIG.timeout
+      );
+      response.sent = true;
+      response.tcpResponse = tcpResponse || 'No response (message may still be received)';
+    } catch (error) {
+      response.sent = false;
+      response.error = error.message;
+    }
+
+    return response;
+
+  } catch (error) {
+    fastify.log.error(error);
+    return reply.code(500).send({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/sia/alarm24/test
+ * Quick test endpoint - sends a test alarm to Alarm24
+ */
+fastify.post('/api/sia/alarm24/test', async (request, reply) => {
+  try {
+    const { type = 'plain', alertType = 'test', alertLevel = 'normal', alertValue = '' } = request.body || {};
+
+    const account = ALARM24_CONFIG.account;
+    let siaMessage, crc;
+
+    if (type === 'encrypted') {
+      const result = buildEncryptedMedicalAlarm(account, alertType, alertLevel, alertValue, DEFAULT_ENCRYPTION_KEY);
+      siaMessage = result.message;
+      crc = result.crc;
+    } else {
+      const result = buildPlainMedicalAlarm(account, alertType, alertLevel, alertValue);
+      siaMessage = result.message;
+      crc = result.crc;
+    }
+
+    const response = {
+      success: true,
+      type,
+      account,
+      message: {
+        plain: siaMessage.toString('ascii').replace(/\n/g, '\\n').replace(/\r/g, '\\r'),
+        hex: siaMessage.toString('hex').toUpperCase(),
+        crc
+      },
+      receiver: {
+        host: ALARM24_CONFIG.host,
+        port: ALARM24_CONFIG.port
+      },
+      feedback: 'Call 761 14 100 to verify received data'
+    };
+
+    // Send to Alarm24
+    try {
+      const tcpResponse = await sendTCPMessage(
+        siaMessage,
+        ALARM24_CONFIG.host,
+        ALARM24_CONFIG.port,
+        ALARM24_CONFIG.timeout
+      );
+      response.sent = true;
+      response.tcpResponse = tcpResponse || 'No response (message may still be received)';
+    } catch (error) {
+      response.sent = false;
+      response.error = error.message;
+    }
+
+    return response;
+
+  } catch (error) {
+    fastify.log.error(error);
+    return reply.code(500).send({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/sia/alarm24/send
+ * Send medical alarm to Alarm24
+ * 
+ * Body:
+ * {
+ *   "type": "plain" or "encrypted",
+ *   "alertType": "heart_rate",
+ *   "alertLevel": "critical",
+ *   "alertValue": "150",
+ *   "account": "555555" (optional, uses default)
+ * }
+ */
+fastify.post('/api/sia/alarm24/send', async (request, reply) => {
+  try {
+    const {
+      type = 'plain',
+      alertType = 'medical',
+      alertLevel = 'normal',
+      alertValue = '',
+      account = ALARM24_CONFIG.account
+    } = request.body || {};
+
+    let siaMessage, crc, seq;
+
+    if (type === 'encrypted') {
+      const result = buildEncryptedMedicalAlarm(account, alertType, alertLevel, alertValue, DEFAULT_ENCRYPTION_KEY);
+      siaMessage = result.message;
+      crc = result.crc;
+      seq = result.sequence;
+    } else {
+      const result = buildPlainMedicalAlarm(account, alertType, alertLevel, alertValue);
+      siaMessage = result.message;
+      crc = result.crc;
+      seq = result.sequence;
+    }
+
+    const response = {
+      success: true,
+      alarm: {
+        type,
+        account,
+        alertType,
+        alertLevel,
+        alertValue,
+        sequence: seq
+      },
+      message: {
+        plain: siaMessage.toString('ascii').replace(/\n/g, '\\n').replace(/\r/g, '\\r'),
+        crc
+      },
+      receiver: {
+        host: ALARM24_CONFIG.host,
+        port: ALARM24_CONFIG.port
+      }
+    };
+
+    // Send to Alarm24
+    try {
+      const tcpResponse = await sendTCPMessage(
+        siaMessage,
+        ALARM24_CONFIG.host,
+        ALARM24_CONFIG.port,
+        ALARM24_CONFIG.timeout
+      );
+      response.sent = true;
+      response.tcpResponse = tcpResponse || 'No response';
+    } catch (error) {
+      response.sent = false;
+      response.error = error.message;
+    }
+
+    return response;
+
+  } catch (error) {
+    fastify.log.error(error);
+    return reply.code(500).send({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/sia/plain
+ * Send non-encrypted SIA message (original endpoint)
  */
 fastify.post('/api/sia/plain', async (request, reply) => {
   try {
@@ -90,27 +465,16 @@ fastify.post('/api/sia/plain', async (request, reply) => {
     const {
       protocolId = 'SIA-DCS',
       accountPrefix = 'L0',
-      account,
+      account = ALARM24_CONFIG.account,
       data,
       sequence = sequenceNumber
     } = message;
 
-    if (!account || !data) {
-      return reply.code(400).send({
-        error: 'Account and data fields are required'
-      });
+    if (!data) {
+      return reply.code(400).send({ error: 'Data field is required' });
     }
 
-    // Build message
-    const siaMessage = buildPlainMessage(
-      protocolId,
-      sequence,
-      accountPrefix,
-      account,
-      data
-    );
-
-    // Increment sequence number
+    const siaMessage = buildPlainMessage(protocolId, sequence, accountPrefix, account, data);
     sequenceNumber = (sequenceNumber + 1) % 65536;
 
     const response = {
@@ -119,29 +483,25 @@ fastify.post('/api/sia/plain', async (request, reply) => {
         hex: siaMessage.toString('hex').toUpperCase(),
         ascii: siaMessage.toString('ascii').replace(/\r/g, '\\r').replace(/\n/g, '\\n'),
         length: siaMessage.length,
-        sequence: sequence
+        sequence
       },
       sent: false
     };
 
-    // Send if requested
-    if (send && receiver) {
-      if (!receiver.host || !receiver.port) {
-        return reply.code(400).send({
-          error: 'Receiver host and port are required when send=true'
-        });
-      }
+    // Use Alarm24 as default receiver if not specified
+    const targetReceiver = receiver || (send ? { host: ALARM24_CONFIG.host, port: ALARM24_CONFIG.port } : null);
 
+    if (send && targetReceiver) {
       try {
         const tcpResponse = await sendTCPMessage(
           siaMessage,
-          receiver.host,
-          receiver.port,
-          receiver.timeout || 5000
+          targetReceiver.host,
+          targetReceiver.port,
+          targetReceiver.timeout || ALARM24_CONFIG.timeout
         );
-
         response.sent = true;
         response.tcpResponse = tcpResponse;
+        response.receiver = targetReceiver;
       } catch (error) {
         response.sent = false;
         response.error = error.message;
@@ -158,24 +518,7 @@ fastify.post('/api/sia/plain', async (request, reply) => {
 
 /**
  * POST /api/sia/encrypted
- * Send encrypted SIA message with GPS coordinates
- * 
- * Body:
- * {
- *   "receiver": { "host": "192.168.1.100", "port": 1000 },
- *   "message": {
- *     "protocolId": "SIA-DCS",
- *     "accountPrefix": "L0",
- *     "account": "1234",
- *     "alarmCommand": "Nri/BA01",
- *     "latitude": 59.9139,
- *     "longitude": 10.7522
- *   },
- *   "encryption": {
- *     "key": "594162417237323352466D3964673233"
- *   },
- *   "send": true
- * }
+ * Send encrypted SIA message (original endpoint)
  */
 fastify.post('/api/sia/encrypted', async (request, reply) => {
   try {
@@ -185,50 +528,40 @@ fastify.post('/api/sia/encrypted', async (request, reply) => {
       return reply.code(400).send({ error: 'Message object is required' });
     }
 
-    if (!encryption || !encryption.key) {
-      return reply.code(400).send({ error: 'Encryption key is required' });
-    }
+    const key = encryption?.key || DEFAULT_ENCRYPTION_KEY;
 
     const {
       protocolId = 'SIA-DCS',
       accountPrefix = 'L0',
-      account,
+      account = ALARM24_CONFIG.account,
       alarmCommand,
       latitude,
       longitude,
       sequence = sequenceNumber
     } = message;
 
-    if (!account || !alarmCommand) {
-      return reply.code(400).send({
-        error: 'Account and alarmCommand fields are required'
-      });
+    if (!alarmCommand) {
+      return reply.code(400).send({ error: 'alarmCommand field is required' });
     }
 
-    // Get timestamp
     const now = new Date();
     const datePart = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${now.getFullYear()}`;
     const timePart = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
 
-    // Convert coordinates if provided
     let coordinates = '';
     if (latitude !== undefined && longitude !== undefined) {
       coordinates = convertCoordinates(latitude, longitude);
     }
 
-    // Build encrypted message (matching sia-encrypted.js logic)
     const userIdStr = account.toString();
-    const data = `${alarmCommand}]${coordinates}_${timePart},${datePart}`;
     const fullMessageString = `"*${protocolId}"${sequence.toString(16).toUpperCase().padStart(4, '0')}${accountPrefix}#${userIdStr}[${userIdStr}|${alarmCommand}]${coordinates}_${timePart},${datePart}`;
 
     const bracketIndex = fullMessageString.indexOf('[');
     const partBefore = fullMessageString.substring(0, bracketIndex + 1);
     const partAfter = '|' + fullMessageString.substring(bracketIndex + 1);
 
-    // Encrypt
-    const { addPadding, encryptAES } = require('./sia-utils');
     const paddedData = addPadding(Buffer.from(partAfter, 'ascii'));
-    const encryptedHex = encryptAES(paddedData, encryption.key);
+    const encryptedHex = encryptAES(paddedData, key);
 
     const messageBody = `${partBefore}${encryptedHex}]`;
     const length = messageBody.length;
@@ -237,7 +570,6 @@ fastify.post('/api/sia/encrypted', async (request, reply) => {
     const fullMessage = `\n${crcValue}${lengthField}${messageBody}\r`;
     const siaMessage = Buffer.from(fullMessage, 'ascii');
 
-    // Increment sequence number
     sequenceNumber = (sequenceNumber + 1) % 65536;
 
     const response = {
@@ -246,7 +578,7 @@ fastify.post('/api/sia/encrypted', async (request, reply) => {
         hex: siaMessage.toString('hex').toUpperCase(),
         ascii: siaMessage.toString('ascii').replace(/\r/g, '\\r').replace(/\n/g, '\\n'),
         length: siaMessage.length,
-        sequence: sequence,
+        sequence,
         encrypted: true,
         coordinates: coordinates || null,
         timestamp: `${timePart}, ${datePart}`
@@ -254,24 +586,19 @@ fastify.post('/api/sia/encrypted', async (request, reply) => {
       sent: false
     };
 
-    // Send if requested
-    if (send && receiver) {
-      if (!receiver.host || !receiver.port) {
-        return reply.code(400).send({
-          error: 'Receiver host and port are required when send=true'
-        });
-      }
+    const targetReceiver = receiver || (send ? { host: ALARM24_CONFIG.host, port: ALARM24_CONFIG.port } : null);
 
+    if (send && targetReceiver) {
       try {
         const tcpResponse = await sendTCPMessage(
           siaMessage,
-          receiver.host,
-          receiver.port,
-          receiver.timeout || 5000
+          targetReceiver.host,
+          targetReceiver.port,
+          targetReceiver.timeout || ALARM24_CONFIG.timeout
         );
-
         response.sent = true;
         response.tcpResponse = tcpResponse;
+        response.receiver = targetReceiver;
       } catch (error) {
         response.sent = false;
         response.error = error.message;
@@ -287,119 +614,49 @@ fastify.post('/api/sia/encrypted', async (request, reply) => {
 });
 
 /**
- * GET /api/sia/message/analyze
- * Analyze a message without sending
- * Query params: type (plain|encrypted), and message fields
+ * GET /api/sia/config
+ * Get current Alarm24 configuration
  */
-fastify.get('/api/sia/message/analyze', async (request, reply) => {
-  try {
-    const { type = 'plain' } = request.query;
-
-    if (type === 'plain') {
-      const { protocolId = 'SIA-DCS', accountPrefix = 'L0', account, data, sequence = 1 } = request.query;
-
-      if (!account || !data) {
-        return reply.code(400).send({
-          error: 'Account and data query parameters are required'
-        });
-      }
-
-      const message = buildPlainMessage(
-        protocolId,
-        parseInt(sequence, 10),
-        accountPrefix,
-        account,
-        data
-      );
-
-      const messageStr = message.toString('ascii');
-      const crc = messageStr.substring(1, 5);
-      const length = messageStr.substring(5, 9);
-
-      return {
-        type: 'plain',
-        message: {
-          hex: message.toString('hex').toUpperCase(),
-          ascii: messageStr.replace(/\r/g, '\\r').replace(/\n/g, '\\n'),
-          length: message.length,
-          breakdown: {
-            lf: message[0] === 0x0A,
-            crc,
-            lengthField: length,
-            cr: message[message.length - 1] === 0x0D
-          }
-        }
-      };
-    }
-
-    return reply.code(400).send({ error: 'Invalid type. Use "plain" or "encrypted"' });
-
-  } catch (error) {
-    fastify.log.error(error);
-    return reply.code(500).send({ error: error.message });
-  }
+fastify.get('/api/sia/config', async (request, reply) => {
+  return {
+    alarm24: ALARM24_CONFIG,
+    encryptionKey: DEFAULT_ENCRYPTION_KEY.substring(0, 8) + '...',
+    signalType: 'MA (Medical Alarm)',
+    feedback: 'Call 761 14 100 to verify received data'
+  };
 });
 
 /**
  * POST /api/sia/demo
- * Generate demo messages without sending
+ * Generate demo messages
  */
 fastify.post('/api/sia/demo', async (request, reply) => {
   try {
-    const { type = 'both' } = request.body;
+    const { type = 'both' } = request.body || {};
     const results = {};
+    const account = ALARM24_CONFIG.account;
 
     if (type === 'plain' || type === 'both') {
-      const plainMessage = buildPlainMessage('SIA-DCS', 1, 'L0', '1234', 'Nri1/BA01');
+      const result = buildPlainMedicalAlarm(account, 'test', 'normal', '');
       results.plain = {
-        hex: plainMessage.toString('hex').toUpperCase(),
-        ascii: plainMessage.toString('ascii').replace(/\r/g, '\\r').replace(/\n/g, '\\n'),
-        length: plainMessage.length
+        ascii: result.message.toString('ascii').replace(/\r/g, '\\r').replace(/\n/g, '\\n'),
+        hex: result.message.toString('hex').toUpperCase(),
+        crc: result.crc
       };
     }
 
     if (type === 'encrypted' || type === 'both') {
-      // Encrypted demo
-      const key = '594162417237323352466D3964673233';
-      const account = '1234';
-      const alarmCommand = 'Nri/BA01';
-      const latitude = 59.9139;
-      const longitude = 10.7522;
-
-      const now = new Date();
-      const datePart = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${now.getFullYear()}`;
-      const timePart = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
-
-      const coordinates = convertCoordinates(latitude, longitude);
-      const userIdStr = account.toString();
-      const fullMessageString = `"*SIA-DCS"0001L0#${userIdStr}[${userIdStr}|${alarmCommand}]${coordinates}_${timePart},${datePart}`;
-
-      const bracketIndex = fullMessageString.indexOf('[');
-      const partBefore = fullMessageString.substring(0, bracketIndex + 1);
-      const partAfter = '|' + fullMessageString.substring(bracketIndex + 1);
-
-      const { addPadding, encryptAES } = require('./sia-utils');
-      const paddedData = addPadding(Buffer.from(partAfter, 'ascii'));
-      const encryptedHex = encryptAES(paddedData, key);
-
-      const messageBody = `${partBefore}${encryptedHex}]`;
-      const length = messageBody.length;
-      const lengthField = formatLength(length);
-      const crcValue = calculateCRC(messageBody);
-      const fullMessage = `\n${crcValue}${lengthField}${messageBody}\r`;
-      const encryptedMessage = Buffer.from(fullMessage, 'ascii');
-
+      const result = buildEncryptedMedicalAlarm(account, 'test', 'normal', '', DEFAULT_ENCRYPTION_KEY);
       results.encrypted = {
-        hex: encryptedMessage.toString('hex').toUpperCase(),
-        ascii: encryptedMessage.toString('ascii').replace(/\r/g, '\\r').replace(/\n/g, '\\n'),
-        length: encryptedMessage.length,
-        coordinates,
-        timestamp: `${timePart}, ${datePart}`
+        ascii: result.message.toString('ascii').replace(/\r/g, '\\r').replace(/\n/g, '\\n'),
+        hex: result.message.toString('hex').toUpperCase(),
+        crc: result.crc
       };
     }
 
     return {
       success: true,
+      account,
       demos: results
     };
 
@@ -410,4 +667,3 @@ fastify.post('/api/sia/demo', async (request, reply) => {
 });
 
 module.exports = fastify;
-
