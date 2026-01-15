@@ -8,8 +8,7 @@ fastify.get('/', async (request, reply) => {
     alarm24: {
       host: '213.167.121.142',
       port: 12004,
-      account: '555555',
-      feedback: 'Call 761 14 100 to verify received data'
+      account: '555555'
     },
     endpoints: {
       health: 'GET /health',
@@ -33,7 +32,6 @@ const start = async () => {
     console.log(`   Host:     213.167.121.142`);
     console.log(`   Port:     12004`);
     console.log(`   Account:  555555`);
-    console.log(`   Feedback: Call 761 14 100 to verify\n`);
     console.log(`📚 API Endpoints:`);
     console.log(`   GET  /health              - Health check`);
     console.log(`   GET  /api/sia/config      - Get configuration`);

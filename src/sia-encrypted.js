@@ -24,8 +24,14 @@ function sendEncryptedMessage(message, host, port) {
     client.setTimeout(5000); // 5 second timeout
     
     client.connect(port, host, () => {
+      console.log(`[TCP] Connected to ${host}:${port}`);
       console.log('Sent encrypted message:', message.toString('ascii').replace(/\r/g, '\\r').replace(/\n/g, '\\n'));
-      client.write(message);
+      try {
+        client.write(message);
+        console.log(`[TCP] Sent ${message.length} bytes to ${host}:${port}`);
+      } catch (err) {
+        console.error(`[TCP] Error while sending to ${host}:${port}: ${err.message}`);
+      }
     });
     
     client.on('data', (data) => {
@@ -35,19 +41,19 @@ function sendEncryptedMessage(message, host, port) {
     });
     
     client.on('error', (err) => {
-      console.error('Error:', err.message);
+      console.error(`[TCP] Error on connection to ${host}:${port}: ${err.message}`);
       client.destroy();
       reject(err);
     });
     
     client.on('timeout', () => {
-      console.error('Connection timeout');
+      console.error(`[TCP] Connection timeout to ${host}:${port}`);
       client.destroy();
       reject(new Error('Connection timeout'));
     });
     
     client.on('close', () => {
-      // Connection closed
+      console.log(`[TCP] Connection to ${host}:${port} closed`);
     });
   });
 }

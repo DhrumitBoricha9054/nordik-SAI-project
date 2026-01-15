@@ -7,7 +7,7 @@
  * - IP: 213.167.121.142
  * - Port: 12004
  * - Account ID: 555555
- * - Feedback: Call 761 14 100 to verify received data
+ *
  */
 
 const fastify = require('fastify')({
@@ -61,24 +61,38 @@ function sendTCPMessage(message, host, port, timeout = 10000) {
     let responseData = Buffer.alloc(0);
 
     client.connect(port, host, () => {
-      client.write(message);
+      console.log(`[TCP] Connected to ${host}:${port}`);
+      try {
+        client.write(message);
+        console.log(`[TCP] Sent ${message.length} bytes to ${host}:${port}`);
+      } catch (err) {
+        console.error(`[TCP] Error while sending to ${host}:${port}: ${err.message}`);
+      }
     });
 
     client.on('data', (data) => {
       responseData = Buffer.concat([responseData, data]);
+      try {
+        console.log(`[TCP] Received ${data.length} bytes from ${host}:${port}: ${data.toString('ascii').replace(/\r/g,'\\r').replace(/\n/g,'\\n')}`);
+      } catch (e) {
+        console.log(`[TCP] Received ${data.length} bytes from ${host}:${port}`);
+      }
     });
 
     client.on('error', (err) => {
+      console.error(`[TCP] Error on connection to ${host}:${port}: ${err.message}`);
       client.destroy();
       reject(err);
     });
 
     client.on('timeout', () => {
+      console.error(`[TCP] Connection timeout to ${host}:${port}`);
       client.destroy();
       reject(new Error('Connection timeout'));
     });
 
     client.on('close', () => {
+      console.log(`[TCP] Connection to ${host}:${port} closed`);
       resolve(responseData.length > 0 ? responseData.toString('ascii') : null);
     });
   });
@@ -221,7 +235,6 @@ fastify.get('/health', async (request, reply) => {
       host: ALARM24_CONFIG.host,
       port: ALARM24_CONFIG.port,
       clientId: ALARM24_CONFIG.account,
-      feedback: 'Call 761 14 100 to verify received data'
     }
   };
 });
@@ -283,8 +296,7 @@ fastify.post('/api/sia/alarm24/send-encrypted', async (request, reply) => {
       receiver: {
         host: ALARM24_CONFIG.host,
         port: ALARM24_CONFIG.port
-      },
-      feedback: 'Call 761 14 100 to verify received data'
+      }
     };
 
     // Send to Alarm24
@@ -343,8 +355,7 @@ fastify.post('/api/sia/alarm24/test', async (request, reply) => {
       receiver: {
         host: ALARM24_CONFIG.host,
         port: ALARM24_CONFIG.port
-      },
-      feedback: 'Call 761 14 100 to verify received data'
+      }
     };
 
     // Send to Alarm24
@@ -618,12 +629,11 @@ fastify.post('/api/sia/encrypted', async (request, reply) => {
  * Get current Alarm24 configuration
  */
 fastify.get('/api/sia/config', async (request, reply) => {
-  return {
-    alarm24: ALARM24_CONFIG,
-    encryptionKey: DEFAULT_ENCRYPTION_KEY.substring(0, 8) + '...',
-    signalType: 'MA (Medical Alarm)',
-    feedback: 'Call 761 14 100 to verify received data'
-  };
+    return {
+      alarm24: ALARM24_CONFIG,
+      encryptionKey: DEFAULT_ENCRYPTION_KEY.substring(0, 8) + '...',
+      signalType: 'MA (Medical Alarm)'
+    };
 });
 
 /**
