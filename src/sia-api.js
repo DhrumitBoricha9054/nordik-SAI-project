@@ -44,7 +44,7 @@ const ALARM24_CONFIG = {
   timeout: 10000
 };
 
-const DEFAULT_ENCRYPTION_KEY = '594162417237323352466D3964673233';
+const DEFAULT_ENCRYPTION_KEY = '4B38665033516D3741325A7839524465'; // Alarm24 key
 
 // Sequence number tracker
 let sequenceNumber = 1;
@@ -73,7 +73,7 @@ function sendTCPMessage(message, host, port, timeout = 10000) {
     client.on('data', (data) => {
       responseData = Buffer.concat([responseData, data]);
       try {
-        console.log(`[TCP] Received ${data.length} bytes from ${host}:${port}: ${data.toString('ascii').replace(/\r/g,'\\r').replace(/\n/g,'\\n')}`);
+        console.log(`[TCP] Received ${data.length} bytes from ${host}:${port}: ${data.toString('ascii').replace(/\r/g, '\\r').replace(/\n/g, '\\n')}`);
       } catch (e) {
         console.log(`[TCP] Received ${data.length} bytes from ${host}:${port}`);
       }
@@ -119,7 +119,8 @@ function buildEncryptedAlarmPython(clientId, signalType, zone, latitude, longitu
   const outputCoordinates = convertCoordinates(latitude, longitude);
 
   // Python line 20: input_string = f'"*SIA-DCS"0005L0#{user_id}[{user_id}|{alarm_command}]{output_coordinates}_{time_part},{date_part}'
-  const inputString = `"*SIA-DCS"${formatSequence(sequenceNumber)}L0#${clientId}[${clientId}|${alarmCommand}]${outputCoordinates}_${timePart},${datePart}`;
+  // NOTE: Python uses hardcoded "0005" not variable sequence
+  const inputString = `"*SIA-DCS"0005L0#${clientId}[${clientId}|${alarmCommand}]${outputCoordinates}_${timePart},${datePart}`;
 
   // Python line 24-27: part_before, part_after = input_string.split('[', 1)
   const bracketIndex = inputString.indexOf('[');
@@ -147,12 +148,10 @@ function buildEncryptedAlarmPython(clientId, signalType, zone, latitude, longitu
   // Python line 41: with_line_feed_and_return = f"\r\n{with_hash}\r"
   const fullMessage = `\r\n${withHash}\r`;
 
-  sequenceNumber = (sequenceNumber + 1) % 65536;
-
   return {
     message: Buffer.from(fullMessage, 'ascii'),
     crc: crcArc,
-    sequence: sequenceNumber - 1,
+    sequence: '0005',
     inputString,
     partBefore,
     partAfter
@@ -629,11 +628,11 @@ fastify.post('/api/sia/encrypted', async (request, reply) => {
  * Get current Alarm24 configuration
  */
 fastify.get('/api/sia/config', async (request, reply) => {
-    return {
-      alarm24: ALARM24_CONFIG,
-      encryptionKey: DEFAULT_ENCRYPTION_KEY.substring(0, 8) + '...',
-      signalType: 'MA (Medical Alarm)'
-    };
+  return {
+    alarm24: ALARM24_CONFIG,
+    encryptionKey: DEFAULT_ENCRYPTION_KEY.substring(0, 8) + '...',
+    signalType: 'MA (Medical Alarm)'
+  };
 });
 
 /**
