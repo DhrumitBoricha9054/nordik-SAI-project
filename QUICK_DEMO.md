@@ -1,137 +1,24 @@
-# 🚀 SIA DC-09 Implementation - Quick Demo
+PORT="8000"
+ZH_GLOBAL_ID="00000000-0000-0000-0000-000000000000"
 
-## ✅ Status: COMPLETE & READY FOR POC
+# Neon Cloud PostgreSQL Database
+ZH_PG_HOSTNAME="ep-hidden-thunder-a1nwxyps-pooler.ap-southeast-1.aws.neon.tech"
+ZH_PG_PORT="5432"
+ZH_PG_USER="dhrumit"
+ZH_PG_PSWD="npg_hFD5Nnkysq3Z"
+ZH_PG_DB="neondb"
 
----
+# ZH_PG_HOSTNAME="0.0.0.0"
+# ZH_PG_PORT="5432"
+# ZH_PG_USER="zh_admin"
+# ZH_PG_PSWD="Vuqbig-xirgen-2wytno"
+# ZH_PG_DB="zh_test"
 
-## 📦 What's Been Built
+ZH_ACCESS_TOKEN_SECRET="4119ca31a18827bb1d03de3d"
+ZH_REFRESH_TOKEN_SECRET="6ee2dcd6bd74f8c498e7c620"
 
-### 3 Main Scripts:
-1. **`sia-plain.js`** - Non-encrypted message sender
-2. **`sia-encrypted.js`** - Encrypted message sender with GPS
-3. **`sia-demo.js`** - Demo script (no server needed)
+ZH_LIVEKIT_API_KEY = "API5kXZTsoFtrVp"
+ZH_LIVEKIT_API_SECRET = "CUhnJOWA0PsgVFX6fbqs3ETKydSePjm5vFuw51nh64t"
 
-### Shared Utilities:
-- **`sia-utils.js`** - All DC-09 compliant functions
-
----
-
-## 🎯 Quick Test (No Server Required)
-
-```bash
-npm run sia-demo
-```
-
-This shows:
-- ✅ Message generation (hex & ASCII)
-- ✅ Field-by-field breakdown
-- ✅ DC-09 compliance checklist
-- ✅ Multiple signal types
-
----
-
-## 📊 Example Output
-
-### Non-Encrypted Message:
-```
-\n4E670024"SIA-DCS"0001L0#1234[1234|Nri1/BA01]\r
-```
-
-**Breakdown:**
-- `\n` = Line Feed (LF)
-- `4E67` = CRC-16 ARC
-- `0024` = Length (0LLL format)
-- `"SIA-DCS"` = Protocol ID
-- `0001` = Sequence number
-- `L0` = Account prefix
-- `#1234` = Account number
-- `[1234|Nri1/BA01]` = Message data
-- `\r` = Carriage Return (CR)
-
-### Encrypted Message:
-```
-\n586400D7"*SIA-DCS"0001L0#1234[76342658D25127E09E2F...]\r
-```
-
-**Features:**
-- `*` prefix indicates encryption
-- Encrypted data as ASCII hex
-- Includes GPS coordinates
-- Includes timestamp
-
----
-
-## ✅ DC-09 Compliance
-
-| Feature | Status |
-|---------|--------|
-| Message Format | ✅ Correct |
-| CRC Calculation | ✅ CRC-16 ARC |
-| Length Field | ✅ 0LLL format |
-| Sequence Numbers | ✅ Variable tracking |
-| Encryption | ✅ AES-128-CBC |
-| Padding | ✅ Pseudo-random |
-| LF/CR | ✅ Proper format |
-
----
-
-## 🎬 How to Show Your Friend
-
-### Option 1: Run Demo Script
-```bash
-npm run sia-demo
-```
-Shows complete output with all details.
-
-### Option 2: Share Files
-- `demo-output.txt` - Full demo output
-- `IMPLEMENTATION_SUMMARY.md` - Complete summary
-- `README.md` - Usage documentation
-
-### Option 3: Interactive Demo
-```bash
-npm run sia-plain      # Non-encrypted
-npm run sia-encrypted  # Encrypted
-```
-
----
-
-## 📝 Key Points to Highlight
-
-1. **✅ Fully DC-09 Compliant**
-   - All standard requirements met
-   - Proper message formatting
-   - Correct encryption implementation
-
-2. **✅ Production Ready**
-   - Error handling
-   - Sequence number tracking
-   - GPS coordinate support
-   - Timestamp generation
-
-3. **✅ Easy to Integrate**
-   - Clean code structure
-   - Modular design
-   - Well documented
-   - Ready for cloud system integration
-
----
-
-## 🎯 Next: POC Testing
-
-Ready to test with alarm central station!
-
-**What's Needed:**
-- Receiver IP/Port
-- Encryption keys
-- Test account numbers
-
-**What We Can Test:**
-- Message sending
-- ACK/NAK/DUH responses
-- Encryption/decryption
-- Timestamp validation
-
----
-
-*Ready for review and POC setup! 🚀*
+ZH_SVEVE_USERNAME="nordic8"
+ZH_SVEVE_PSWD="4309942affcec84"
