@@ -3,9 +3,11 @@
  * Shared utilities for SIA message formatting and CRC calculation
  */
 
+const crc = require('crc');
+
 /**
  * Calculate CRC-16 ARC (used by DC-09 standard)
- * CRC-16 ARC uses polynomial 0x8005 (also known as CRC-16 IBM)
+ * Uses crc.crc16 which matches Python's CrcArc (polynomial 0x8005, reflected I/O)
  * @param {Buffer|string} data - Data to calculate CRC for
  * @returns {string} 4-character hexadecimal CRC string (uppercase)
  */
@@ -14,24 +16,11 @@ function calculateCRC(data) {
     data = Buffer.from(data, 'ascii');
   }
 
-  // CRC-16 ARC implementation (polynomial 0x8005)
-  let crc = 0x0000;
-  const polynomial = 0x8005;
-
-  for (let i = 0; i < data.length; i++) {
-    crc ^= data[i] << 8;
-    for (let j = 0; j < 8; j++) {
-      if (crc & 0x8000) {
-        crc = (crc << 1) ^ polynomial;
-      } else {
-        crc <<= 1;
-      }
-      crc &= 0xFFFF;
-    }
-  }
+  // Use npm crc package - crc16 matches Python's CrcArc exactly
+  const crcValue = crc.crc16(data);
 
   // Format as 4-character hex string (uppercase, zero-padded)
-  return crc.toString(16).toUpperCase().padStart(4, '0');
+  return crcValue.toString(16).toUpperCase().padStart(4, '0');
 }
 
 /**
@@ -157,6 +146,8 @@ function encryptAES(data, key) {
   const iv = Buffer.alloc(16, 0);
 
   const cipher = crypto.createCipheriv('aes-128-cbc', keyBuffer.slice(0, 16), iv);
+  // Disable auto-padding - we've already padded manually to 16-byte boundary
+  cipher.setAutoPadding(false);
   let encrypted = cipher.update(dataBuffer);
   encrypted = Buffer.concat([encrypted, cipher.final()]);
 
