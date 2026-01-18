@@ -115,8 +115,10 @@ function buildEncryptedAlarmPython(clientId, signalType, zone, latitude, longitu
   // Python: alarm_command = SignalType + Zone = "Nri/" + signalType + zone
   const alarmCommand = `Nri/${signalType}${zone}`;
 
-  // Python: output_coordinates = self.convert_coordinates(latitude, longitude)
-  const outputCoordinates = convertCoordinates(latitude, longitude);
+  // Python line 19: output_coordinates = self.convert_coordinates(latitude, longitude)
+  // BUT Python main() passes (lat, lon) to send_alarm(lon, lat) - they're swapped!
+  // So we need to swap them too to match Python's output
+  const outputCoordinates = convertCoordinates(longitude, latitude);
 
   // Python line 20: input_string = f'"*SIA-DCS"0005L0#{user_id}[{user_id}|{alarm_command}]{output_coordinates}_{time_part},{date_part}'
   // NOTE: Python uses hardcoded "0005" not variable sequence

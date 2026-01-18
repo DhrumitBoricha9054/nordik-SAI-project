@@ -206,22 +206,28 @@ function buildEncryptedMessage(id, seq, accountPrefix, account, data, key, recei
 }
 
 /**
- * Convert coordinates to SIA format
+ * Convert coordinates to SIA format - MATCHES Python exactly
+ * Python: def convert_coordinates(self, latitude, longitude)
  * @param {number} latitude - Latitude in decimal degrees
  * @param {number} longitude - Longitude in decimal degrees
  * @returns {string} Formatted coordinates [XdddEmm.mmmmmm][YddNmm.mmmmmm]
  */
 function convertCoordinates(latitude, longitude) {
-  // Longitude
-  const lonDegrees = Math.floor(longitude);
-  const lonMinutes = (longitude - lonDegrees) * 60;
+  // Python line 100-101: lon_value = float(longitude), lat_value = float(latitude)
+  const lonValue = parseFloat(longitude);
+  const latValue = parseFloat(latitude);
+
+  // Python line 104-106: Convert longitude to X format
+  const lonDegrees = Math.floor(lonValue);
+  const lonMinutes = (lonValue - lonDegrees) * 60;
   const lonFormat = `[X${lonDegrees.toString().padStart(3, '0')}E${lonMinutes.toFixed(8)}]`;
 
-  // Latitude
-  const latDegrees = Math.floor(latitude);
-  const latMinutes = (latitude - latDegrees) * 60;
+  // Python line 109-111: Convert latitude to Y format
+  const latDegrees = Math.floor(latValue);
+  const latMinutes = (latValue - latDegrees) * 60;
   const latFormat = `[Y${latDegrees.toString().padStart(2, '0')}N${latMinutes.toFixed(8)}]`;
 
+  // Python line 114: return lon_format + lat_format
   return lonFormat + latFormat;
 }
 
