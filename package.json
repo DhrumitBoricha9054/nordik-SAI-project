@@ -12,7 +12,8 @@
     "sia-demo": "node src/sia-demo.js",
     "alarm-processor": "node src/alarm-processor.js",
     "setup-db": "node src/setup-db.js",
-    "test-alert": "node src/test-alert.js"
+    "test-alert": "node src/test-alert.js",
+    "test-connection": "node test-connection.js"
   },
   "dependencies": {
     "crc": "^4.3.2",
