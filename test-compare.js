@@ -2,11 +2,11 @@
  * Compare Node.js output with Python output
  */
 
-const { 
-  addPadding, 
-  encryptAES, 
-  calculateCRC, 
-  convertCoordinates 
+const {
+    addPadding,
+    encryptAES,
+    calculateCRC,
+    convertCoordinates
 } = require('./src/sia-utils');
 
 // Test values - same as we'd use in Python
