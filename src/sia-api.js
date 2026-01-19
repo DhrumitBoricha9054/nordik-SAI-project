@@ -57,8 +57,9 @@ function sendTCPMessage(message, host, port, timeout = 10000) {
     const net = require('net');
     const client = new net.Socket();
 
-    // User requested to remove explicit timeout to see the "real" underlying error
-    // client.setTimeout(timeout); 
+    // Re-enabled timeout to prevent infinite hanging (5 minute wait)
+    // Using default timeout (10s) or user specified
+    client.setTimeout(timeout);
 
     let responseData = Buffer.alloc(0);
 
@@ -88,14 +89,18 @@ function sendTCPMessage(message, host, port, timeout = 10000) {
       reject(err);
     });
 
-    /* 
-    // Removed explicit timeout handler as requested to allow OS-level timeout/errors to surface
     client.on('timeout', () => {
       console.error(`[TCP] Connection timeout to ${host}:${port}`);
       client.destroy();
-      reject(new Error('Connection timeout'));
+      // Create a detailed system-like error for timeout
+      const err = new Error('Connect ETIMEDOUT ' + host + ':' + port);
+      err.code = 'ETIMEDOUT';
+      err.syscall = 'connect';
+      err.address = host;
+      err.port = port;
+      err.errno = -60; // Standard ETIMEDOUT errno
+      reject(err);
     });
-    */
 
     client.on('close', () => {
       console.log(`[TCP] Connection to ${host}:${port} closed`);
