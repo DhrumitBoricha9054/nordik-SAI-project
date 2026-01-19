@@ -56,7 +56,9 @@ function sendTCPMessage(message, host, port, timeout = 10000) {
   return new Promise((resolve, reject) => {
     const net = require('net');
     const client = new net.Socket();
-    client.setTimeout(timeout);
+
+    // User requested to remove explicit timeout to see the "real" underlying error
+    // client.setTimeout(timeout); 
 
     let responseData = Buffer.alloc(0);
 
@@ -80,19 +82,25 @@ function sendTCPMessage(message, host, port, timeout = 10000) {
     });
 
     client.on('error', (err) => {
-      console.error(`[TCP] Error on connection to ${host}:${port}: ${err.message}`);
+      // Return full error details including code, syscall, etc.
+      console.error(`[TCP] Error on connection to ${host}:${port}:`, err);
       client.destroy();
       reject(err);
     });
 
+    /* 
+    // Removed explicit timeout handler as requested to allow OS-level timeout/errors to surface
     client.on('timeout', () => {
       console.error(`[TCP] Connection timeout to ${host}:${port}`);
       client.destroy();
       reject(new Error('Connection timeout'));
     });
+    */
 
     client.on('close', () => {
       console.log(`[TCP] Connection to ${host}:${port} closed`);
+      // If we got data, resolve with it. If not, and no error occurred...
+      // Usually if close happens without error and no data, it might be a clean close from server.
       resolve(responseData.length > 0 ? responseData.toString('ascii') : null);
     });
   });
@@ -312,7 +320,13 @@ fastify.post('/api/sia/alarm24/send-encrypted', async (request, reply) => {
       response.tcpResponse = tcpResponse || 'No response (message may still be received)';
     } catch (error) {
       response.sent = false;
-      response.error = error.message;
+      response.error = {
+        message: error.message,
+        code: error.code,
+        syscall: error.syscall,
+        errno: error.errno,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      };
     }
 
     return response;
@@ -371,7 +385,12 @@ fastify.post('/api/sia/alarm24/test', async (request, reply) => {
       response.tcpResponse = tcpResponse || 'No response (message may still be received)';
     } catch (error) {
       response.sent = false;
-      response.error = error.message;
+      response.error = {
+        message: error.message,
+        code: error.code,
+        syscall: error.syscall,
+        errno: error.errno
+      };
     }
 
     return response;
@@ -451,7 +470,12 @@ fastify.post('/api/sia/alarm24/send', async (request, reply) => {
       response.tcpResponse = tcpResponse || 'No response';
     } catch (error) {
       response.sent = false;
-      response.error = error.message;
+      response.error = {
+        message: error.message,
+        code: error.code,
+        syscall: error.syscall,
+        errno: error.errno
+      };
     }
 
     return response;
@@ -516,7 +540,12 @@ fastify.post('/api/sia/plain', async (request, reply) => {
         response.receiver = targetReceiver;
       } catch (error) {
         response.sent = false;
-        response.error = error.message;
+        response.error = {
+          message: error.message,
+          code: error.code,
+          syscall: error.syscall,
+          errno: error.errno
+        };
       }
     }
 
@@ -613,7 +642,12 @@ fastify.post('/api/sia/encrypted', async (request, reply) => {
         response.receiver = targetReceiver;
       } catch (error) {
         response.sent = false;
-        response.error = error.message;
+        response.error = {
+          message: error.message,
+          code: error.code,
+          syscall: error.syscall,
+          errno: error.errno
+        };
       }
     }
 

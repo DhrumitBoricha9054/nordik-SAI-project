@@ -127,9 +127,9 @@ class StringMaker:
 
 def main():
     string_maker = StringMaker()
-    key = "594162417237323352466D3964673233"
-    host = "1.1.1.1"
-    port = 1000
+    key = "4B38665033516D3741325A7839524465"
+    host = "213.167.121.142"
+    port = 12004
     ClientID = input("ClientID: ")
     SignalType = "Nri/" + input("SignalType: ")
     Zone = input("Zone: ")
