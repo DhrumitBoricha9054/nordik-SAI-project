@@ -74,12 +74,21 @@ function sendTCPMessage(message, host, port, timeout = 10000) {
     });
 
     client.on('data', (data) => {
+      // Clear timeout immediately when we receive data! (IMPORTANT)
+      // This prevents the "Connection timeout" error from firing *after* we successfully got the ACK.
+      // (The previous "client.setTimeout(timeout)" would keep ticking otherwise)
+      client.setTimeout(0);
+
       responseData = Buffer.concat([responseData, data]);
       try {
         console.log(`[TCP] Received ${data.length} bytes from ${host}:${port}: ${data.toString('ascii').replace(/\r/g, '\\r').replace(/\n/g, '\\n')}`);
       } catch (e) {
         console.log(`[TCP] Received ${data.length} bytes from ${host}:${port}`);
       }
+
+      // We got our data (ACK), so we can close the connection now.
+      client.destroy();
+      resolve(responseData.toString('ascii'));
     });
 
     client.on('error', (err) => {
@@ -90,8 +99,13 @@ function sendTCPMessage(message, host, port, timeout = 10000) {
     });
 
     client.on('timeout', () => {
+      // If we already have data, ignore timeout? 
+      // Actually, if we got data, we should have cleared timeout in 'on data'.
+      // So if we are here, it means we really have no data yet.
+
       console.error(`[TCP] Connection timeout to ${host}:${port}`);
       client.destroy();
+
       // Create a detailed system-like error for timeout
       const err = new Error('Connect ETIMEDOUT ' + host + ':' + port);
       err.code = 'ETIMEDOUT';
@@ -104,9 +118,16 @@ function sendTCPMessage(message, host, port, timeout = 10000) {
 
     client.on('close', () => {
       console.log(`[TCP] Connection to ${host}:${port} closed`);
-      // If we got data, resolve with it. If not, and no error occurred...
-      // Usually if close happens without error and no data, it might be a clean close from server.
-      resolve(responseData.length > 0 ? responseData.toString('ascii') : null);
+      // If we resolved already in 'data', this does nothing (Promises settle once).
+      // But if user didn't get data and closed happened without error...
+      if (responseData.length > 0) {
+        resolve(responseData.toString('ascii'));
+      } else {
+        // It's possible to connect, send, then close without data. 
+        // In that case resolve null? Or wait for timeout?
+        // Usually we expect a response. 
+        resolve(null);
+      }
     });
   });
 }
