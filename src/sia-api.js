@@ -289,6 +289,9 @@ fastify.get('/health', async (request, reply) => {
  */
 fastify.post('/api/sia/alarm24/send-encrypted', async (request, reply) => {
   try {
+    // Debug: Log received body
+    console.log('[DEBUG] Received body:', JSON.stringify(request.body));
+    
     const {
       clientId = ALARM24_CONFIG.account,
       signalType = 'BA',
@@ -296,6 +299,9 @@ fastify.post('/api/sia/alarm24/send-encrypted', async (request, reply) => {
       latitude = 59.9139,
       longitude = 10.7522
     } = request.body || {};
+
+    // Debug: Log parsed values
+    console.log('[DEBUG] Parsed signalType:', signalType);
 
     // Build message exactly like Python
     const result = buildEncryptedAlarmPython(
