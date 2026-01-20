@@ -291,7 +291,7 @@ fastify.post('/api/sia/alarm24/send-encrypted', async (request, reply) => {
   try {
     // Debug: Log received body
     console.log('[DEBUG] Received body:', JSON.stringify(request.body));
-    
+
     const {
       clientId = ALARM24_CONFIG.account,
       signalType = 'BA',
