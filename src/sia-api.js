@@ -140,14 +140,16 @@ function sendTCPMessage(message, host, port, timeout = 10000) {
  * @param {number} latitude - Latitude
  * @param {number} longitude - Longitude
  * @param {string} encryptionKey - Hex encryption key
+ * @param {string} message - Optional message/description
  */
-function buildEncryptedAlarmPython(clientId, signalType, zone, latitude, longitude, encryptionKey) {
+function buildEncryptedAlarmPython(clientId, signalType, zone, latitude, longitude, encryptionKey, message = '') {
   const now = new Date();
   const datePart = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${now.getFullYear()}`;
   const timePart = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
 
   // Python: alarm_command = SignalType + Zone = "Nri/" + signalType + zone
-  const alarmCommand = `Nri/${signalType}${zone}`;
+  // Add optional message if provided
+  const alarmCommand = message ? `Nri/${signalType}${zone}^${message}` : `Nri/${signalType}${zone}`;
 
   // Python line 19: output_coordinates = self.convert_coordinates(latitude, longitude)
   // BUT Python main() passes (lat, lon) to send_alarm(lon, lat) - they're swapped!
@@ -297,11 +299,13 @@ fastify.post('/api/sia/alarm24/send-encrypted', async (request, reply) => {
       signalType = 'BA',
       zone = '01',
       latitude = 59.9139,
-      longitude = 10.7522
+      longitude = 10.7522,
+      message = ''
     } = request.body || {};
 
     // Debug: Log parsed values
     console.log('[DEBUG] Parsed signalType:', signalType);
+    console.log('[DEBUG] Message:', message);
 
     // Build message exactly like Python
     const result = buildEncryptedAlarmPython(
@@ -310,63 +314,55 @@ fastify.post('/api/sia/alarm24/send-encrypted', async (request, reply) => {
       zone,
       parseFloat(latitude),
       parseFloat(longitude),
-      DEFAULT_ENCRYPTION_KEY
-    );
-
-    const response = {
-      success: true,
-      input: {
-        clientId,
-        signalType,
-        zone,
-        latitude,
-        longitude,
-        alarmCommand: `Nri/${signalType}${zone}`
+      DEFAULT_ENCRYPTION_KEY,
+      message
+        message,
+      alarmCommand: message ? `Nri/${signalType}${zone}^${message}` : `Nri/${signalType}${zone}`
       },
-      message: {
-        ascii: result.message.toString('ascii').replace(/\n/g, '\\n').replace(/\r/g, '\\r'),
-        hex: result.message.toString('hex').toUpperCase(),
+  message: {
+    ascii: result.message.toString('ascii').replace(/\n/g, '\\n').replace(/\r/g, '\\r'),
+      hex: result.message.toString('hex').toUpperCase(),
         crc: result.crc,
-        length: result.message.length
-      },
-      debug: {
-        inputString: result.inputString,
-        partBefore: result.partBefore,
+          length: result.message.length
+  },
+  debug: {
+    inputString: result.inputString,
+      partBefore: result.partBefore,
         partAfter: result.partAfter
-      },
-      receiver: {
-        host: ALARM24_CONFIG.host,
-        port: ALARM24_CONFIG.port
-      }
-    };
+  },
+  receiver: {
+    host: ALARM24_CONFIG.host,
+      port: ALARM24_CONFIG.port
+  }
+};
 
-    // Send to Alarm24
-    try {
-      const tcpResponse = await sendTCPMessage(
-        result.message,
-        ALARM24_CONFIG.host,
-        ALARM24_CONFIG.port,
-        ALARM24_CONFIG.timeout
-      );
-      response.sent = true;
-      response.tcpResponse = tcpResponse || 'No response (message may still be received)';
-    } catch (error) {
-      response.sent = false;
-      response.error = {
-        message: error.message,
-        code: error.code,
-        syscall: error.syscall,
-        errno: error.errno,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-      };
-    }
+// Send to Alarm24
+try {
+  const tcpResponse = await sendTCPMessage(
+    result.message,
+    ALARM24_CONFIG.host,
+    ALARM24_CONFIG.port,
+    ALARM24_CONFIG.timeout
+  );
+  response.sent = true;
+  response.tcpResponse = tcpResponse || 'No response (message may still be received)';
+} catch (error) {
+  response.sent = false;
+  response.error = {
+    message: error.message,
+    code: error.code,
+    syscall: error.syscall,
+    errno: error.errno,
+    stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+  };
+}
 
-    return response;
+return response;
 
   } catch (error) {
-    fastify.log.error(error);
-    return reply.code(500).send({ error: error.message });
-  }
+  fastify.log.error(error);
+  return reply.code(500).send({ error: error.message });
+}
 });
 
 /**
