@@ -316,53 +316,63 @@ fastify.post('/api/sia/alarm24/send-encrypted', async (request, reply) => {
       parseFloat(longitude),
       DEFAULT_ENCRYPTION_KEY,
       message
+    );
+
+    const response = {
+      success: true,
+      input: {
+        clientId,
+        signalType,
+        zone,
+        latitude,
+        longitude,
         message,
-      alarmCommand: message ? `Nri/${signalType}${zone}^${message}` : `Nri/${signalType}${zone}`
+        alarmCommand: message ? `Nri/${signalType}${zone}^${message}` : `Nri/${signalType}${zone}`
       },
-  message: {
-    ascii: result.message.toString('ascii').replace(/\n/g, '\\n').replace(/\r/g, '\\r'),
-      hex: result.message.toString('hex').toUpperCase(),
+      message: {
+        ascii: result.message.toString('ascii').replace(/\n/g, '\\n').replace(/\r/g, '\\r'),
+        hex: result.message.toString('hex').toUpperCase(),
         crc: result.crc,
-          length: result.message.length
-  },
-  debug: {
-    inputString: result.inputString,
-      partBefore: result.partBefore,
+        length: result.message.length
+      },
+      debug: {
+        inputString: result.inputString,
+        partBefore: result.partBefore,
         partAfter: result.partAfter
-  },
-  receiver: {
-    host: ALARM24_CONFIG.host,
-      port: ALARM24_CONFIG.port
-  }
-};
+      },
+      receiver: {
+        host: ALARM24_CONFIG.host,
+        port: ALARM24_CONFIG.port
+      }
+    };
 
-// Send to Alarm24
-try {
-  const tcpResponse = await sendTCPMessage(
-    result.message,
-    ALARM24_CONFIG.host,
-    ALARM24_CONFIG.port,
-    ALARM24_CONFIG.timeout
-  );
-  response.sent = true;
-  response.tcpResponse = tcpResponse || 'No response (message may still be received)';
-} catch (error) {
-  response.sent = false;
-  response.error = {
-    message: error.message,
-    code: error.code,
-    syscall: error.syscall,
-    errno: error.errno,
-    stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-  };
-}
+    // Send to Alarm24
+    try {
+      const tcpResponse = await sendTCPMessage(
+        result.message,
+        ALARM24_CONFIG.host,
+        ALARM24_CONFIG.port,
+        ALARM24_CONFIG.timeout
+      );
+      response.sent = true;
+      response.tcpResponse = tcpResponse || 'No response (message may still be received)';
+    } catch (error) {
+      response.sent = false;
+      response.error = {
+        message: error.message,
+        code: error.code,
+        syscall: error.syscall,
+        errno: error.errno,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      };
+    }
 
-return response;
+    return response;
 
   } catch (error) {
-  fastify.log.error(error);
-  return reply.code(500).send({ error: error.message });
-}
+    fastify.log.error(error);
+    return reply.code(500).send({ error: error.message });
+  }
 });
 
 /**
