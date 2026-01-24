@@ -50,6 +50,51 @@ const DEFAULT_ENCRYPTION_KEY = '4B38665033516D3741325A7839524465'; // Alarm24 ke
 let sequenceNumber = 1;
 
 /**
+ * Get human-readable description for signal type
+ */
+function getSignalTypeDescription(code) {
+  const descriptions = {
+    'BA': 'Burglar Alarm',
+    'BR': 'Burglar Restore',
+    'FA': 'Fire Alarm',
+    'FR': 'Fire Restore',
+    'MA': 'Medical Alarm',
+    'MR': 'Medical Restore',
+    'PA': 'Panic Alarm',
+    'PR': 'Panic Restore',
+    'WA': 'Water Alarm',
+    'WR': 'Water Restore',
+    'GA': 'Gas Alarm',
+    'GR': 'Gas Restore',
+    'TA': 'Tamper Alarm',
+    'TR': 'Tamper Restore',
+    'CA': 'Carbon Monoxide Alarm',
+    'CR': 'CO Restore',
+    'CL': 'Close/Arm System',
+    'OP': 'Open/Disarm System',
+    'RP': 'Test Report',
+    'AT': 'AC Power Trouble',
+    'AR': 'AC Power Restore',
+    'YT': 'Low Battery',
+    'YR': 'Battery Restore'
+  };
+  return descriptions[code] || `Unknown Signal (${code})`;
+}
+
+/**
+ * Get troubleshooting message for common errors
+ */
+function getTroubleshootingMessage(errorCode) {
+  const messages = {
+    'ETIMEDOUT': 'Connection timeout - Your IP may need to be whitelisted by Alarm24, or firewall is blocking the connection',
+    'ECONNREFUSED': 'Connection refused - The alarm central server may be down or incorrect host/port',
+    'ENOTFOUND': 'Host not found - Check the alarm central IP address',
+    'ENETUNREACH': 'Network unreachable - Check your internet connection'
+  };
+  return messages[errorCode] || 'Unknown network error - Check logs for details';
+}
+
+/**
  * Send TCP message helper
  */
 function sendTCPMessage(message, host, port, timeout = 10000) {
@@ -319,51 +364,85 @@ fastify.post('/api/sia/alarm24/send-encrypted', async (request, reply) => {
     );
 
     const response = {
-      success: true,
-      input: {
-        clientId,
-        signalType,
-        zone,
-        latitude,
-        longitude,
-        message,
+      status: 'success',
+      timestamp: new Date().toISOString(),
+
+      // Input Data - What you sent
+      request: {
+        description: 'Your alarm request data',
+        clientId: clientId,
+        alarmType: signalType,
+        alarmDescription: getSignalTypeDescription(signalType),
+        zone: zone,
+        location: {
+          latitude: latitude,
+          longitude: longitude
+        },
+        customMessage: message || null
+      },
+
+      // Encrypted Message - What was sent to Alarm24
+      encryptedMessage: {
+        description: 'AES-128-CBC encrypted message sent to alarm central',
+        protocol: 'SIA DC-09-2013',
+        encryption: 'AES-128-CBC',
+        format: 'ASCII hex encoded',
+        fullMessage: result.message.toString('ascii').replace(/\n/g, '\\n').replace(/\r/g, '\\r'),
+        hexData: result.message.toString('hex').toUpperCase(),
+        size: result.message.length + ' bytes',
+        crc: result.crc,
         alarmCommand: message ? `Nri/${signalType}${zone}^${message}` : `Nri/${signalType}${zone}`
       },
-      message: {
-        ascii: result.message.toString('ascii').replace(/\n/g, '\\n').replace(/\r/g, '\\r'),
-        hex: result.message.toString('hex').toUpperCase(),
-        crc: result.crc,
-        length: result.message.length
+
+      // Transmission Status
+      transmission: {
+        description: 'Message delivery status',
+        destination: {
+          host: ALARM24_CONFIG.host,
+          port: ALARM24_CONFIG.port,
+          name: 'Alarm24 Central Station'
+        },
+        sent: false,
+        sentAt: null,
+        response: null
       },
-      debug: {
-        inputString: result.inputString,
-        partBefore: result.partBefore,
-        partAfter: result.partAfter
-      },
-      receiver: {
-        host: ALARM24_CONFIG.host,
-        port: ALARM24_CONFIG.port
+
+      // Technical Details (for debugging)
+      technical: {
+        sequence: result.sequence,
+        coordinates: result.inputString.match(/\[X.*?\]\[Y.*?\]/)?.[0] || null,
+        timestamp: result.inputString.match(/_(.+)$/)?.[1] || null
       }
     };
 
     // Send to Alarm24
     try {
+      const sendTime = new Date().toISOString();
       const tcpResponse = await sendTCPMessage(
         result.message,
         ALARM24_CONFIG.host,
         ALARM24_CONFIG.port,
         ALARM24_CONFIG.timeout
       );
-      response.sent = true;
-      response.tcpResponse = tcpResponse || 'No response (message may still be received)';
+      response.transmission.sent = true;
+      response.transmission.sentAt = sendTime;
+      response.transmission.status = 'delivered';
+      response.transmission.response = tcpResponse ? {
+        description: 'Acknowledgment from alarm central',
+        data: tcpResponse,
+        message: 'Alarm received and acknowledged by central station'
+      } : {
+        description: 'No response received',
+        message: 'Message sent but no acknowledgment received (this is normal for some systems)'
+      };
     } catch (error) {
-      response.sent = false;
-      response.error = {
-        message: error.message,
-        code: error.code,
-        syscall: error.syscall,
-        errno: error.errno,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      response.transmission.sent = false;
+      response.transmission.status = 'failed';
+      response.transmission.error = {
+        description: 'Failed to deliver message to alarm central',
+        reason: error.message,
+        errorCode: error.code,
+        troubleshooting: getTroubleshootingMessage(error.code)
       };
     }
 
